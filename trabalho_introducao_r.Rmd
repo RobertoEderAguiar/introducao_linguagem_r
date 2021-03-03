@@ -1,0 +1,344 @@
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+### Limpando Plots, Console and Ambiente
+```{r}
+rm(list = ls())
+dev.off(dev.list()["RStudioGD"])
+cat("\014")
+```
+
+
+
+
+
+
+
+# CARREGANDO PACOTES
+#instalação do readr
+#install.packages('readr')
+#install.packages('tidyverse')
+#install.packages("maps")
+#install.packages("geosphere")
+#install.packages("dplyr")
+#install.packages("nycflights13")
+#install.packages("raster")
+
+#install.packages("rgdal")
+ 
+
+```{r}
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(esquisse)
+library(shapefiles)
+library(rnaturalearth)
+library(shapefiles)
+
+#library(maps)
+#library(nycflights13)
+#library(shapefiles)
+
+```
+
+
+#importando base de dados
+```{r}
+
+obito_cartorio <- read_csv("C:/PÓS UNIFOR - CIENCIAS DE DADOS/05-Desafio/obito_cartorio.csv")
+#View(obito_cartorio)
+
+caso_full <- read_csv("C:/PÓS UNIFOR - CIENCIAS DE DADOS/05-Desafio/caso_full.csv")
+#View(caso_full)
+```
+
+
+
+
+#Entendendo os dados 
+```{r}
+str(obito_cartorio)
+str(caso_full)
+#visulizar primeiras linhas
+head(caso_full) 
+head(obito_cartorio)
+```
+#analisando se base tem dados repetidos e retirando valores repetidos caso haja 
+```{r}
+glimpse(obito_cartorio)
+glimpse(caso_full)
+obito_cartorio_t <- unique(obito_cartorio)
+caso_full_t <- unique(caso_full)
+glimpse(caso_full_t)
+glimpse(caso_full_t)
+#foi ferivicado que nao existem valores duplicados!
+```
+
+
+### Selecionando observações
+```{r}
+s_caso_full <- caso_full[which(caso_full$state == 'CE'), ]
+s_obito_cartorio <- obito_cartorio[which(obito_cartorio$state == 'CE'), ]
+```
+### Retirando linhas com falta de observações
+```{r}
+sum(complete.cases(s_caso_full))
+s_caso_full <- s_caso_full[complete.cases(s_caso_full), ]
+```
+### Juntando seleções
+```{r}
+j_casos <- merge(x = s_caso_full, y = s_obito_cartorio, by = "date", all.x = TRUE)
+```
+
+
+#primeiro caso de covid no Ceara x primeiro caso de covid no Brasil
+```{r}
+caso_full %>% 
+  group_by(city) %>% 
+  slice(which.min(date))
+  head(caso_full[1:1,])
+  
+s_caso_full %>% 
+  group_by(city) %>% 
+  slice(which.min(date))
+  head(s_caso_full[1:1,])
+
+head(s_caso_full[1:1,])
+ primeiros_casos <- c(s_caso_full[1:1,],caso_full[1:1,] )
+
+```
+
+
+```{r}
+ggplot(j_casos) +
+ aes(x = date, y = deaths_covid19) +
+ geom_line(size = 1L, colour = "#0c4c8a") +
+ labs(x = "Data", y = "Total", title = "Total de Mortes por Covid") +
+ theme_minimal()
+```
+
+# Casos confirmados Covid
+```{r}
+head(s_caso_full)
+ggplot(j_casos, aes(x=date,y=new_confirmed))+
+geom_line(aes(col="Casos confirmado"))
+
+
+```
+
+
+
+#Mortes do Problemas Respitarorios 2019 X 2020
+```{r}
+
+ggplot(j_casos, aes(x=date,y=deaths_respiratory_failure_2019))+
+geom_line(aes(col="Morte por problemas respiratório 2019"))+
+geom_line(aes(x=date,y=deaths_respiratory_failure_2020 ))+
+geom_line(aes(col="Morte por problemas respiratório 2020"))
+
+
+```
+
+# Mortes de Covid por estado 2020
+```{r}
+
+
+ggplot(obito_cartorio, aes(x=deaths_pneumonia_2020,y=state ))+
+geom_line(aes(x=deaths_pneumonia_2019,y=state ))
+
+
+
+```
+
+
+```{r}
+#head(obito_cartorio)
+#head(j_casos )
+
+```
+
+
+#Covid por Cidade em 100 habitantes
+```{r}
+
+
+library(ggplot2)
+
+ggplot(j_casos) +
+ aes(x = city, y = last_available_confirmed_per_100k_inhabitants, group = city) +
+ geom_boxplot(fill = "#0c4c8a") +
+ theme_minimal()
+
+
+```
+
+
+#Grafico com as 5 cidades com mais casos epidemiological_week_2020 no Ceara
+```{r}
+
+library(dplyr)
+library(ggplot2)
+library(sqldf)
+
+
+
+group_casos <- group_by(j_casos,city)%>%
+                        summarise(Total=sum(epidemiological_week_2020))
+
+
+group_mais_casos <- sqldf("SELECT * from group_casos
+                                        order by total desc limit 5")
+
+
+ggplot(group_mais_casos) +
+ aes(x = city, fill = city, weight = Total) +
+ geom_bar() +
+ scale_fill_hue() +
+ theme_minimal()
+
+
+
+```
+
+
+
+
+#Grafico com as 5 cidades com menos casos epidemiological_week_2020 no Ceara
+```{r}
+
+library(dplyr)
+library(ggplot2)
+library(sqldf)
+group_casos <- group_by(j_casos,city)%>%
+                        summarise(Total=sum(epidemiological_week_2020))
+
+
+
+group_menos_casos <- sqldf("SELECT * from group_casos
+                                         order by total limit 5")
+
+
+ggplot(group_menos_casos) +
+ aes(x = city, fill = city, weight = Total) +
+ geom_bar() +
+ scale_fill_hue() +
+ theme_minimal()
+
+
+
+```
+
+
+```{r}
+#obito_cartorio 
+#caso_full 
+#head(obito_cartorio)
+
+obito_cartorio_casos <- group_by(obito_cartorio,state)%>%
+                        summarise(Total=sum(deaths_covid19))
+
+state_casos <- group_by(caso_full,state)%>%
+                        summarise(Total=sum(new_deaths))
+
+obito_cartorio_casos<- sqldf("SELECT * from obito_cartorio_casos
+                                         order by total DESC limit 5")
+
+states_mais_casos <- sqldf("SELECT * from state_casos
+                                         order by total DESC limit 5")
+
+```
+
+
+#Top 5 casos por cartorio no Brasil  
+```{r}
+
+library(ggplot2)
+
+ggplot(obito_cartorio_casos) +
+ aes(x = state, fill = state, weight = Total) +
+ geom_bar() +
+ scale_fill_hue() +
+ theme_minimal()
+
+```
+#Top 5 casos por Estados no Brasil 
+```{r}
+
+ggplot(states_mais_casos) +
+ aes(x = state, fill = state, weight = Total) +
+ geom_bar() +
+ scale_fill_hue() +
+ theme_minimal()
+
+```
+
+
+#Novos Casos de Covid no Brasil retirado do site'https://covid.saude.gov.br/'
+```{r}
+library(ggplot2)
+library(geobr)
+library(readr)
+library(dplyr)
+
+estados <- read_state(code_state = 'all')
+
+
+setwd('C:/PÓS UNIFOR - CIENCIAS DE DADOS/')
+
+
+covid <- read.csv("C:/PÓS UNIFOR - CIENCIAS DE DADOS/introdução R/HIST_PAINEL_COVIDBR_27fev2021.csv",sep = ";") %>%
+                   filter(data==data[length(data)]) %>% rename(abbrev_state=estado)
+
+
+
+#head(covid_data_atual)
+
+juntos <- full_join(estados,covid,by="abbrev_state")
+
+head(juntos)
+
+juntos$categoria <- cut(juntos$casosNovos ,breaks=c(0,200,2000,4000,6000,Inf),
+    labels=c("1 a 200", "201 a 2000", "2001 a 4000", "4001 a 6000", "Acima de 6000"))
+
+
+
+ggplot(juntos)+
+        geom_sf(aes(fill=categoria)) +
+        scale_fill_manual(values = c("#F3D4D2","#E9A8A2","#E9635A","#C41617","#6A0002"))+
+  labs(title = "Casos de Covid-19",
+       fill="Casos \nConfirmados",
+       x=NULL,
+       y=NULL)
+      
+
+
+
+```
+
+#Obitos Acumulados no Brasil retirado do site'https://covid.saude.gov.br/'
+```{r}
+
+
+juntos$categoria <- cut(juntos$obitosAcumulado ,breaks=c(0,200,2000,4000,6000,Inf),
+    labels=c("1 a 200", "201 a 2000", "2001 a 4000", "4001 a 6000", "Acima de 6000"))
+
+
+
+ggplot(juntos)+
+        geom_sf(aes(fill=categoria)) +
+        scale_fill_manual(values = c("#F3D4D2","#E9A8A2","#E9635A","#C41617","#6A0002"))+
+   labs(title = "Casos de Covid-19",
+       fill="Obitos \nAcumulado",
+       x=NULL,
+       y=NULL)
+      
+```
+

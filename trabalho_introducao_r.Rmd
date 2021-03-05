@@ -15,10 +15,6 @@ cat("\014")
 
 
 
-
-
-
-
 # CARREGANDO PACOTES
 #instalação do readr
 #install.packages('readr')
@@ -31,7 +27,6 @@ cat("\014")
 
 #install.packages("rgdal")
  
-
 ```{r}
 library(readr)
 library(tidyverse)
@@ -49,7 +44,6 @@ library(shapefiles)
 
 ```
 
-
 #importando base de dados
 ```{r}
 
@@ -59,9 +53,6 @@ obito_cartorio <- read_csv("C:/PÓS UNIFOR - CIENCIAS DE DADOS/05-Desafio/obito_
 caso_full <- read_csv("C:/PÓS UNIFOR - CIENCIAS DE DADOS/05-Desafio/caso_full.csv")
 #View(caso_full)
 ```
-
-
-
 
 #Entendendo os dados 
 ```{r}
@@ -81,6 +72,7 @@ glimpse(caso_full_t)
 glimpse(caso_full_t)
 #foi ferivicado que nao existem valores duplicados!
 ```
+
 
 
 ### Selecionando observações
@@ -133,7 +125,6 @@ geom_line(aes(col="Casos confirmado"))
 
 
 ```
-
 
 
 #Mortes do Problemas Respitarorios 2019 X 2020
